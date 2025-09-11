@@ -1,49 +1,212 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { Image } from 'astro:assets';
+import { contentfulClient, type BlogPost, type Publication, type ExperienceEntry } from '../lib/contentful';
+import { documentToHtmlString } from '@contentful/rich-text-html-renderer';
+import { normalizeContentfulUrl } from '../lib/imageUtils';
+import { Marquee } from '@/components/magicui/Marquee';
+import Layot from '@/layouts/Layot.astro';
+import heroImage from '@/hero.png';
+import AutoLinkPreview from '@/components/AutoLinkPreview.astro';
+
+const entries = await contentfulClient.getEntries<BlogPost>({
+  content_type: "blogPost",
+});
+
+const posts = entries.items.map((item) => {
+  const { title, description, slug, banner } = item.fields;
+  return {
+    title,
+    slug,
+    description,
+    banner: (banner as any)?.fields?.file?.url ?? '',
+    date: new Date(item.sys.updatedAt).toLocaleDateString()
+  };
+});
+
+const publicationsRes = await contentfulClient.getEntries<Publication>({
+  content_type: 'publicacoes',
+});
+
+const publications = publicationsRes.items.map((item) => {
+  const { title, banner, description, links, tags } = item.fields;
+  const bannerUrl = (banner as any)?.fields?.file?.url ? normalizeContentfulUrl((banner as any).fields.file.url) : '';
+  const tagEntries = Array.isArray(tags) ? tags : tags ? [tags] : [];
+  const tagNames = (tagEntries as any[]).map((t) => t?.fields?.name).filter(Boolean) as string[];
+  return {
+    title: title || 'Sem título',
+    bannerUrl,
+    descriptionHtml: description ? documentToHtmlString(description as any) : '',
+    url: links || '#',
+    tags: tagNames,
+  };
+});
+
+const experiencesRes = await contentfulClient.getEntries<ExperienceEntry>({ content_type: 'experiences' });
+const experienceLogos = experiencesRes.items.map((exp) => {
+  const url = (exp.fields.img as any)?.fields?.file?.url ? normalizeContentfulUrl((exp.fields.img as any).fields.file.url) : '';
+  return { src: url, alt: exp.fields.title || 'Experience' };
+}).filter((x) => x.src);
+
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This
-				template serves as a lightweight, minimally-styled starting point for anyone looking to build
-				a personal website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<Layot>
+			<section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+			<!-- Background Image -->
+			<div class="absolute inset-0">
+				<img 
+					src={heroImage.src}
+					alt="Hero background"
+					class="w-full h-full object-cover"
+				/>
+				<!-- Dark overlay for text readability -->
+			</div>
+			
+			<!-- Content -->
+			<div class="relative mx-auto max-w-7xl ">
+				<div class="text-center">
+					<h1 class="text-3xl font-bold tracking-tight text-white sm:text-5xl md:text-7xl lg:text-8xl mb-6 fade-in drop-shadow-2xl px-4" style="font-family: 'Montserrat', sans-serif;">
+						Maria Clara Prudêncio
+					</h1>
+					<p class="mt-8 text-xl font-light leading-8 text-white max-w-3xl mx-auto slide-up drop-shadow-lg px-4 sm:text-2xl md:text-3xl lg:text-4xl" style="animation-delay: 0.2s; font-family: 'Montserrat', sans-serif;">
+						Jornalista do Norte
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- Featured Content -->
+		<section class="bg-white py-20">
+			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+				{experienceLogos.length > 0 && (
+					<div class="mb-16 py-24 relative" role="region" aria-label="Experience logos">
+						<h2 class="text-center text-sm font-medium text-gray-500 mb-12">Experiência</h2>
+						<Marquee client:load pauseOnHover className="[--duration:25s] [--gap:3rem]">
+							{experienceLogos.map((logo) => (
+								<div class="px-6 shrink-0">
+									<img 
+										src={logo.src} 
+										alt={logo.alt} 
+										loading="lazy" 
+										decoding="async" 
+										class="h-12 sm:h-14 md:h-16 w-auto object-contain opacity-80 hover:opacity-100 transition" 
+									/>
+								</div>
+							))}
+						</Marquee>
+						<div class="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent"></div>
+						<div class="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white to-transparent"></div>
+					</div>
+				)}
+				<div class="text-center mb-16">
+					<h2 class="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">Últimos Artigos</h2>
+					<p class="text-lg text-gray-600 max-w-2xl mx-auto">
+						Últimos artigos publicados.
+					</p>
+				</div>
+
+				<!-- Featured Post -->
+				{posts.length > 0 && (
+					<div class="mb-16">
+						<a href={`/blog/${posts[0].slug}`} class="group block card p-8 lg:p-12">
+							<div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+								<div class="order-2 lg:order-1">
+									<div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mb-4">
+										Artigo em destaque
+									</div>
+									<h3 class="text-3xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
+										{posts[0].title}
+									</h3>
+									<p class="text-gray-600 mb-6 text-lg leading-relaxed">
+										{posts[0].description}
+									</p>
+									<div class="flex items-center text-sm text-gray-500">
+										<time>{posts[0].date}</time>
+									</div>
+								</div>
+								<div class="order-1 lg:order-2">
+									{posts[0].banner && (
+										<img 
+											src={posts[0].banner}
+											alt={posts[0].title}
+											class="w-full aspect-video object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+										/>
+									)}
+								</div>
+							</div>
+						</a>
+					</div>
+				)}
+
+				<!-- Recent Posts Grid -->
+				{posts.length > 1 && (
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16">
+						{posts.slice(1, 7).map((post) => (
+							<a href={`/blog/${post.slug}`} class="group card overflow-hidden">
+								{post.banner && (
+									<div class="aspect-video overflow-hidden">
+										<Image 
+											src={post.banner}
+											alt={post.title}
+											class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+										/>
+									</div>
+								)}
+								<div class="p-6">
+									<h3 class="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+										{post.title}
+									</h3>
+									<p class="text-gray-600 mb-4 line-clamp-3">
+										{post.description}
+									</p>
+									<div class="text-sm text-gray-500">
+										<time>{post.date}</time>
+									</div>
+								</div>
+							</a>
+						))}
+					</div>
+				)}
+
+				<div class="text-center">
+					<a href="/blog" class="btn btn-secondary">
+						Ver Todos
+					</a>
+				</div>
+			</div>
+		</section>
+
+		<!-- Publications Section -->
+		{publications.length > 0 && (
+			<section class="bg-gray-50 py-20">
+				<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-16">
+					<div class="text-center mb-16">
+						<h2 class="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">Publicações</h2>
+						<p class="text-lg text-gray-600 max-w-2xl mx-auto">
+							Artigos, entrevistas e publicações lançadas em vários meios de comunicação.
+						</p>
+					</div>
+
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+						{publications.slice(0, 3).map((pub) => (
+							<AutoLinkPreview
+								url={pub.url}
+								fallbackTitle={pub.title}
+								fallbackDescription={pub.descriptionHtml?.replace(/<[^>]*>/g, '') || ''}
+								fallbackImage={pub.bannerUrl}
+								className="h-full"
+								tags={pub.tags}
+							/>
+						))}
+					</div>
+				</div>
+
+				<div class="text-center">
+					<a href="/publications" class="btn btn-secondary">
+						Ver Todos
+					</a>
+				</div>
+			</section>
+		)}
+
+		</Layot>
+

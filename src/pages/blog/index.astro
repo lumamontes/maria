@@ -1,114 +1,130 @@
 ---
-import { Image } from 'astro:assets';
-import { getCollection } from 'astro:content';
-import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
-import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import Layot from '@/layouts/Layot.astro';
+import { contentfulClient, type BlogPost } from '../../lib/contentful';
 
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+const entries = await contentfulClient.getEntries<BlogPost>({
+  content_type: 'blogPost',
+});
+
+const posts = entries.items.map((item) => {
+  const { title, description, slug, banner } = item.fields;
+  return {
+    title,
+    description,
+    slug,
+    bannerUrl: (banner as any)?.fields?.file?.url ? `https:${(banner as any).fields.file.url}` : '',
+    date: item.sys.updatedAt ? new Date(item.sys.updatedAt).toLocaleDateString() : '',
+  };
+});
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			main {
-				width: 960px;
-			}
-			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
-			}
-			.title {
-				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
-			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
-			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
-			}
-			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
-				}
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<section>
-				<ul>
-					{
-						posts.map((post) => (
-							<li>
-								<a href={`/blog/${post.id}/`}>
-									{post.data.heroImage && (
-										<Image width={720} height={360} src={post.data.heroImage} alt="" />
-									)}
-									<h4 class="title">{post.data.title}</h4>
-									<p class="date">
-										<FormattedDate date={post.data.pubDate} />
-									</p>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
-		</main>
-		<Footer />
-	</body>
-</html>
+<Layot title={`Blog - ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+		<div class="bg-gray-50 min-h-screen pt-20">
+		<!-- Blog Header -->
+		<section class="bg-white py-16 sm:py-24">
+			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+				<div class="text-center">
+					<h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl mb-6">
+						Blog
+					</h1>
+					<p class="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
+						Textos, fotografias e conteúdos sobre jornalismo.
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- Blog Posts -->
+		<section class="py-16">
+			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+				{posts.length > 0 ? (
+					<>
+						<!-- Featured Post -->
+						<div class="mb-16">
+							<a href={`/blog/${posts[0].slug}`} class="group block card p-8 lg:p-12">
+								<div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+									<div class="order-2 lg:order-1">
+										<div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mb-4">
+											Featured
+										</div>
+										<h2 class="text-3xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
+											{posts[0].title}
+										</h2>
+										<p class="text-gray-600 mb-6 text-lg leading-relaxed">
+											{posts[0].description}
+										</p>
+										<div class="flex items-center text-sm text-gray-500">
+											<time>{posts[0].date}</time>
+										</div>
+									</div>
+									<div class="order-1 lg:order-2">
+										{posts[0].bannerUrl && (
+											<img 
+												src={posts[0].bannerUrl}
+												alt={posts[0].title}
+												class="w-full aspect-video object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+												loading="lazy"
+												decoding="async"
+											/>
+										)}
+									</div>
+								</div>
+							</a>
+						</div>
+
+						<!-- All Posts Grid -->
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+							{posts.slice(1).map((post) => (
+								<article class="group card overflow-hidden">
+									<a href={`/blog/${post.slug}`} class="block">
+										{post.bannerUrl && (
+											<div class="aspect-video overflow-hidden">
+												<img 
+													src={post.bannerUrl}
+													alt={post.title}
+													class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+													loading="lazy"
+													decoding="async"
+												/>
+											</div>
+										)}
+										<div class="p-6">
+											<h3 class="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+												{post.title}
+											</h3>
+											<p class="text-gray-600 mb-4 line-clamp-3">
+												{post.description}
+											</p>
+											<div class="flex items-center justify-between text-sm text-gray-500">
+												<time>{post.date}</time>
+												<span class="text-blue-600 group-hover:text-blue-700 font-medium transition-colors">
+													Read more →
+												</span>
+											</div>
+										</div>
+									</a>
+								</article>
+							))}
+						</div>
+					</>
+				) : (
+					<!-- Empty State -->
+					<div class="text-center py-20">
+						<div class="mx-auto max-w-md">
+							<svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+								<path d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.713-3.714M14 40v-4c0-1.313.253-2.566.713-3.714m0 0A10.003 10.003 0 0124 26c4.21 0 7.813 2.602 9.288 6.286" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+							</svg>
+							<h3 class="text-lg font-medium text-gray-900 mb-2">
+								No posts yet
+							</h3>
+							<p class="text-gray-600">
+								Check back soon for new content!
+							</p>
+						</div>
+					</div>
+				)}
+			</div>
+		</section>
+		</div>
+		</Layot>

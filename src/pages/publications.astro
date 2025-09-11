@@ -1,0 +1,67 @@
+---
+import Layot from '@/layouts/Layot.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { contentfulClient, type Publication, type TagEntry } from '../lib/contentful';
+import { AutoLinkPreviewWrapper } from '../components/AutoLinkPreviewWrapper';
+import { documentToHtmlString } from '@contentful/rich-text-html-renderer';
+import AutoLinkPreview from '@/components/AutoLinkPreview.astro';
+
+const res = await contentfulClient.getEntries<Publication>({ content_type: 'publicacoes' });
+const publications = res.items.map((item) => {
+  const { title, banner, description, links, tags } = item.fields;
+  const tagEntries = Array.isArray(tags) ? tags : tags ? [tags] : [];
+  const tagNames = (tagEntries as any[]).map((t) => t?.fields?.name).filter(Boolean) as string[];
+  return {
+    title: title || 'Sem título',
+    image: (banner as any)?.fields?.file?.url ? `https:${(banner as any).fields.file.url}` : '',
+    description: description ? documentToHtmlString(description as any) : '',
+    url: links || '#',
+    tags: tagNames,
+  };
+});
+---
+
+<Layot title={`Publications - ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+	<section class="bg-white py-16 sm:py-24">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="text-center mb-12">
+				<h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl mb-4">Publicações</h1>
+				<p class="text-lg text-gray-600 max-w-2xl mx-auto">Artigos, entrevistas e publicações lançadas em vários meios de comunicação.</p>
+			</div>
+			<div class="flex items-center justify-center gap-3 mb-10">
+				<button class="btn btn-secondary" data-filter="all">Todos</button>
+				<button class="btn btn-secondary" data-filter="Reportagem">Reportagem</button>
+				<button class="btn btn-secondary" data-filter="Assessoria de comunicação">Assessoria de comunicação</button>
+			</div>
+			<div id="pub-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+				{publications.map((pub) => (
+					<div class="pub-card h-full" data-tags={(pub.tags || []).join(',')}>
+						<AutoLinkPreview
+							url={pub.url}
+							className="h-full"
+							tags={pub.tags}
+						/>
+					</div>
+				))}
+			</div>
+		</div>
+	</section>
+	<script is:inline>
+		const buttons = document.querySelectorAll('button[data-filter]');
+		const cards = document.querySelectorAll('.pub-card');
+		buttons.forEach((btn) => {
+			btn.addEventListener('click', () => {
+				const filter = btn.getAttribute('data-filter');
+				buttons.forEach((b) => b.classList.remove('btn-primary'));
+				btn.classList.add('btn-primary');
+				cards.forEach((card) => {
+					const tags = (card.getAttribute('data-tags') || '').split(',').map((s) => s.trim()).filter(Boolean);
+					const match = filter === 'all' || tags.includes(filter || '');
+					card.style.display = match ? '' : 'none';
+				});
+			});
+		});
+	</script>
+</Layot>
+
+

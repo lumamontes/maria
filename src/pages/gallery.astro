@@ -1,0 +1,69 @@
+---
+import { Image } from 'astro:assets';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { contentfulClient, type GalleryEntry } from '../lib/contentful';
+import { processContentfulImages } from '../lib/imageUtils';
+import Layot from '@/layouts/Layot.astro';
+
+const { items } = await contentfulClient.getEntries<GalleryEntry>({
+  content_type: 'gallery'
+});
+
+const allAssets = items.flatMap((entry) => {
+  const photos = (entry.fields.photos || []) as any[];
+  return photos.filter(asset => asset?.fields?.file?.url);
+});
+
+const processedImages = processContentfulImages(allAssets);
+
+---
+
+<Layot title={`${SITE_TITLE} — Gallery`} description={SITE_DESCRIPTION}>
+  <div class=" min-h-screen pt-20">
+    <!-- Hero Section -->
+    <section class="bg-white py-16">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl mb-6">
+            Galeria
+          </h1>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <main class="mx-auto max-w-[1960px] p-4">
+      <!-- {photoId && (
+        <Modal
+          images={images}
+          onClose={() => {
+            setLastViewedPhoto(photoId)
+          }}
+        />
+      )} -->
+      <div class="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4">
+        {processedImages.map(({ id, url, blurDataUrl }) => (
+          <a
+            key={id}
+            href={`/gallery/p/${(id)}`}
+            as={`/gallery/p/${(id)}`}
+            shallow
+            class="relative mb-5 block w-full cursor-zoom-in group after:content-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"
+          >
+            <Image
+              alt="Gallery photo"
+              class="transform rounded-lg brightness-90 transition group-hover:brightness-110"
+              style={{ transform: 'translate3d(0, 0, 0)' }}
+              src={url}
+              width={720}
+              height={480}
+              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, (max-width: 1536px) 33vw, 25vw"
+            />
+          </a>
+        ))}
+      </div>
+    </main>
+  </div>
+
+
+</Layot>

@@ -1,20 +1,104 @@
 ---
-import { type CollectionEntry, getCollection, render } from 'astro:content';
-import BlogPost from '../../layouts/BlogPost.astro';
+import { contentfulClient, type BlogPost } from '../../lib/contentful';
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
+import Layot from '@/layouts/Layot.astro';
 
 export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	return posts.map((post) => ({
-		params: { slug: post.id },
-		props: post,
-	}));
-}
-type Props = CollectionEntry<'blog'>;
+  const { items } = await contentfulClient.getEntries<BlogPost>({
+    content_type: "blogPost",
+  });
 
-const post = Astro.props;
-const { Content } = await render(post);
+  return items.map((item) => ({
+    params: { slug: item.fields.slug },
+    props: {
+      title: item.fields.title,
+      description: item.fields.description,
+      bannerUrl: (item.fields.banner as any)?.fields?.file?.url ?? null,
+      content: documentToHtmlString(item.fields.content),
+      date: item.fields.date ? new Date(item.fields.date as any).toLocaleDateString() : new Date(item.sys.updatedAt).toLocaleDateString(),
+      updatedDate: new Date(item.sys.updatedAt).toLocaleDateString(),
+    },
+  }));
+}
+
+const { title, description, bannerUrl, content, date, updatedDate } = Astro.props;
 ---
 
-<BlogPost {...post.data}>
-	<Content />
-</BlogPost>
+<Layot title={title} description={description}>
+  <div class="bg-gray-50 min-h-screen pt-20">
+    
+    <!-- Article Header -->
+    <article class="bg-white">
+      <div class="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+        <!-- Hero Image -->
+        {bannerUrl && (
+          <div class="mb-12">
+            <img 
+              src={bannerUrl} 
+              alt={title} 
+              class="w-full aspect-video object-cover rounded-2xl shadow-2xl" 
+            />
+          </div>
+        )}
+        
+        <!-- Article Header -->
+        <header class="mb-12 text-center">
+          <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-8">
+            {title}
+          </h1>
+          
+          <div class="flex items-center justify-center space-x-4 text-sm text-gray-600">
+            <time class="flex items-center space-x-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <span>{date}</span>
+            </time>
+            
+            {updatedDate && (
+              <>
+                <span class="text-gray-300">•</span>
+                <span class="flex items-center space-x-1 text-gray-500">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  <span>Updated {updatedDate}</span>
+                </span>
+              </>
+            )}
+          </div>
+          
+          {description && (
+            <p class="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
+              {description}
+            </p>
+          )}
+        </header>
+      </div>
+    </article>
+    
+    <!-- Article Content -->
+    <main class="bg-white py-16">
+      <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div class="prose prose-lg prose-blue max-w-none">
+          <div set:html={content} />
+        </div>
+        
+        <!-- Article Footer -->
+        <footer class="mt-16 pt-8 border-t border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <a href="/blog" class="btn btn-secondary">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Voltar
+              </a>
+            </div>
+            
+          </div>
+        </footer>
+      </div>
+    </main>
+  </div>
+</Layot>
