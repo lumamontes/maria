@@ -1,0 +1,50 @@
+---
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../../consts';
+import { contentfulClient, type GalleryEntry } from '../../../lib/contentful';
+import { processContentfulImages } from '../../../lib/imageUtils';
+import Layot from '@/layouts/Layot.astro';
+import GalleryWithModal from '@/components/GalleryWithModal.tsx';
+
+export async function getStaticPaths() {
+  const { items } = await contentfulClient.getEntries<GalleryEntry>({
+    content_type: 'gallery'
+  });
+
+  const allAssets = items.flatMap((entry) => {
+    const photos = (entry.fields.photos || []) as any[];
+    return photos.filter(asset => asset?.fields?.file?.url);
+  });
+
+  const processedImages = processContentfulImages(allAssets);
+
+  return processedImages.map((image) => ({
+    params: { slug: image.id },
+    props: { 
+      image,
+      allImages: processedImages,
+      currentIndex: processedImages.findIndex(img => img.id === image.id)
+    }
+  }));
+}
+
+const { image, allImages, currentIndex } = Astro.props;
+const pageTitle = image.title ? `${image.title} - ${SITE_TITLE} Gallery` : `${SITE_TITLE} - Gallery`;
+const pageDescription = image.description || `Foto da galeria de ${SITE_TITLE}`;
+---
+
+<Layot 
+  title={pageTitle} 
+  description={pageDescription}
+  image={image.url}
+  type="article"
+>
+  <div class="min-h-screen pt-20">
+    <!-- Gallery with Modal -->
+    <GalleryWithModal 
+      client:load 
+      images={allImages} 
+      initialImageId={image.id}
+      currentIndex={currentIndex}
+    />
+  </div>
+</Layot>

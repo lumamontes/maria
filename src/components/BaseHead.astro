@@ -4,23 +4,40 @@
 import '../styles/global.css';
 import type { ImageMetadata } from 'astro';
 import FallbackImage from '../assets/blog-placeholder-1.jpg';
+
+// Check if we have a custom OG image in public folder
+const getOGImage = (image?: ImageMetadata | any) => {
+	if (image) {
+		// Handle both Astro ImageMetadata and direct URL strings
+		const imageUrl = typeof image === 'string' ? image : image.src || image.url;
+		if (imageUrl) return new URL(imageUrl, Astro.url);
+	}
+	// Use og.png from public folder if available, otherwise fallback
+	return new URL('/og.png', Astro.url);
+};
 import { SITE_TITLE } from '../consts';
 
 interface Props {
 	title: string;
 	description: string;
 	image?: ImageMetadata;
+	keywords?: string;
+	author?: string;
+	type?: 'website' | 'article';
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
-const { title, description, image = FallbackImage } = Astro.props;
+const { title, description, image = FallbackImage, keywords, author = 'Maria Clara Prudêncio', type = 'website' } = Astro.props;
 ---
 
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link
+  rel="icon"
+  href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📰</text></svg>"
+/>
 <link rel="sitemap" href="/sitemap-index.xml" />
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -45,17 +62,100 @@ const { title, description, image = FallbackImage } = Astro.props;
 <title>{title}</title>
 <meta name="title" content={title} />
 <meta name="description" content={description} />
+<meta name="author" content={author} />
+{keywords && <meta name="keywords" content={keywords} />}
+<meta name="robots" content="index, follow" />
+<meta name="language" content="pt-BR" />
+<meta name="geo.region" content="BR-AP" />
+<meta name="geo.placename" content="Macapá, Amapá" />
+<meta name="geo.position" content="0.034934;-51.070618" />
+<meta name="ICBM" content="0.034934, -51.070618" />
 
 <!-- Open Graph / Facebook -->
-<meta property="og:type" content="website" />
+<meta property="og:type" content={type} />
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:image" content={new URL(image.src, Astro.url)} />
+<meta property="og:image" content={getOGImage(image)} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:locale" content="pt_BR" />
+<meta property="og:site_name" content="Maria Clara Prudêncio - Jornalista" />
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:url" content={Astro.url} />
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={new URL(image.src, Astro.url)} />
+<meta property="twitter:image" content={getOGImage(image)} />
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Person",
+		"name": "Maria Clara Prudêncio",
+		"jobTitle": "Jornalista",
+		"description": "Jornalista formada pela UNIFAP, especializada em cobertura da região Norte e Amazônia. Oferece serviços freelancer de jornalismo.",
+		"seeks": "Oportunidades de trabalho e projetos freelancer em jornalismo",
+		"alumniOf": {
+			"@type": "EducationalOrganization",
+			"name": "Universidade Federal do Amapá",
+			"alternateName": "UNIFAP"
+		},
+		"workLocation": {
+			"@type": "Place",
+			"name": "Macapá, Amapá, Brasil",
+			"address": {
+				"@type": "PostalAddress",
+				"addressLocality": "Macapá",
+				"addressRegion": "AP",
+				"addressCountry": "BR"
+			}
+		},
+		"knowsAbout": [
+			"Jornalismo",
+			"Região Norte",
+			"Amazônia",
+			"Questões Sociais",
+			"Meio Ambiente",
+			"Cultura Regional",
+			"Jornalismo Freelance",
+			"Redação",
+			"Reportagem"
+		],
+		"hasOfferCatalog": {
+			"@type": "OfferCatalog",
+			"name": "Serviços de Jornalismo",
+			"itemListElement": [
+				{
+					"@type": "Offer",
+					"itemOffered": {
+						"@type": "Service",
+						"name": "Reportagem",
+						"description": "Cobertura jornalística especializada"
+					}
+				},
+				{
+					"@type": "Offer",
+					"itemOffered": {
+						"@type": "Service",
+						"name": "Redação",
+						"description": "Produção de conteúdo jornalístico"
+					}
+				},
+				{
+					"@type": "Offer",
+					"itemOffered": {
+						"@type": "Service",
+						"name": "Assessoria de Imprensa",
+						"description": "Assessoria de comunicação e imprensa"
+					}
+				}
+			]
+		},
+		"url": "https://mariaprudencio.netlify.app",
+		"sameAs": []
+	}
+</script>

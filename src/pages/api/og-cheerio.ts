@@ -15,49 +15,8 @@ export interface OpenGraphData {
   ogUrl: string;
 }
 
-/**
- * Try multiple URL variants to handle redirects and www prefixes
- */
-function generateUrlVariants(originalUrl: string): string[] {
-  try {
-    const url = new URL(originalUrl);
-    const variants = new Set<string>([originalUrl]);
-    
-    // Add www variant
-    if (url.hostname.startsWith('www.')) {
-      const withoutWww = new URL(originalUrl);
-      withoutWww.hostname = url.hostname.replace('www.', '');
-      variants.add(withoutWww.toString());
-    } else {
-      const withWww = new URL(originalUrl);
-      withWww.hostname = `www.${url.hostname}`;
-      variants.add(withWww.toString());
-    }
-    
-    // Add https/http variants
-    if (url.protocol === 'http:') {
-      const httpsUrl = new URL(originalUrl);
-      httpsUrl.protocol = 'https:';
-      variants.add(httpsUrl.toString());
-    } else if (url.protocol === 'https:') {
-      const httpUrl = new URL(originalUrl);
-      httpUrl.protocol = 'http:';
-      variants.add(httpUrl.toString());
-    }
-    
-    return Array.from(variants);
-  } catch {
-    return [originalUrl];
-  }
-}
-
 export const GET: APIRoute = async ({ request, url, originPathname,  }) => {
-  console.log('Origin Pathname:', originPathname);
-  console.log('Request URL:', request.url);
-  console.log('Astro URL:', url.href);
-  console.log('Search params:', Array.from(url.searchParams.entries()));
   const targetUrl = url.searchParams.get('url');
-  console.log('Target URL:', targetUrl);
   if (!targetUrl) {
     return new Response(JSON.stringify({ error: 'URL parameter is required' }), {
       status: 400,

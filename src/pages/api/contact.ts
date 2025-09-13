@@ -1,4 +1,6 @@
+export const prerender = false;
 import type { APIRoute } from 'astro';
+import { resend } from '@/lib/resend';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -37,32 +39,44 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Log da mensagem (em produção, você enviaria por email ou salvaria no banco)
-    console.log('Nova mensagem de contato recebida:', contactData);
+      // Envio de email via Resend
+      const toEmail = 'lumagoesmontes@gmail.com';
+      const fromEmail = 'noreply@thetaharpia.com';
+      const subject = `Maria, temos uma nova mensagem: ${contactData.assunto}`;
+      const html = `
+        <h2>Nova mensagem de contato recebida via website</h2>
+        <ul>
+          <li><strong>Nome:</strong> ${contactData.nome}</li>
+          <li><strong>Email:</strong> ${contactData.email}</li>
+          <li><strong>Assunto:</strong> ${contactData.assunto}</li>
+          ${contactData.organizacao ? `<li><strong>Organização:</strong> ${contactData.organizacao}</li>` : ''}
+          <li><strong>Mensagem:</strong><br>${contactData.mensagem.replace(/\n/g, '<br>')}</li>
+        </ul>
+        <p><small>Enviado em: ${new Date(contactData.timestamp).toLocaleDateString()}</small></p>
+      `;
 
-    // Em produção, aqui você integraria com:
-    // - Serviço de email (SendGrid, Mailgun, etc.)
-    // - Banco de dados
-    // - Sistema de CRM
-
-    // Exemplo de como seria com um serviço de email:
-    /*
-    await sendEmail({
-      to: 'contato@mariaclaraprudencio.com',
-      from: 'noreply@mariaclaraprudencio.com',
-      subject: `Nova mensagem: ${contactData.assunto}`,
-      html: `
-        <h2>Nova mensagem de contato</h2>
-        <p><strong>Nome:</strong> ${contactData.nome}</p>
-        <p><strong>Email:</strong> ${contactData.email}</p>
-        <p><strong>Assunto:</strong> ${contactData.assunto}</p>
-        ${contactData.organizacao ? `<p><strong>Organização:</strong> ${contactData.organizacao}</p>` : ''}
-        <p><strong>Mensagem:</strong></p>
-        <p>${contactData.mensagem.replace(/\n/g, '<br>')}</p>
-        ${contactData.newsletter ? '<p><em>Interessado em receber newsletter</em></p>' : ''}
-      `
-    });
-    */
+      try {
+        const res = await resend.emails.send({
+          to: toEmail,
+          from: fromEmail,
+          subject,
+          html,
+          replyTo: contactData.email,
+        });
+        console.log('Resend response:', res);
+        if (res.error) {
+          throw new Error(res.error.message || 'Erro ao enviar email');
+        }
+      } catch (err) {
+        console.error('Erro ao enviar email via Resend:', err);
+        return new Response(
+          JSON.stringify({ error: 'Erro ao enviar email. Tente novamente mais tarde.' }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
 
     // Resposta de sucesso
     return new Response(
@@ -91,7 +105,6 @@ export const POST: APIRoute = async ({ request }) => {
   }
 };
 
-// Handle preflight requests
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
     status: 200,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 interface FormData {
@@ -9,6 +9,94 @@ interface FormData {
   mensagem: string;
   newsletter: boolean;
 }
+
+const STORAGE_KEY = 'maria-contact-form-data';
+const STORAGE_VERSION = '1.0';
+
+interface StoredFormData extends FormData {
+  version: string;
+  savedAt: string;
+}
+
+const saveToLocalStorage = (data: FormData) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const dataToStore: StoredFormData = {
+      ...data,
+      version: STORAGE_VERSION,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
+  } catch (error) {
+    console.warn('Failed to save form data to localStorage:', error);
+  }
+};
+
+const loadFromLocalStorage = (): Partial<FormData> | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    
+    const parsedData: StoredFormData = JSON.parse(stored);
+    
+    if (parsedData.version !== STORAGE_VERSION) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    
+    const savedDate = new Date(parsedData.savedAt);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    if (savedDate < thirtyDaysAgo) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    
+    // Return only form data (exclude metadata)
+    const { version, savedAt, ...formData } = parsedData;
+    return formData;
+  } catch (error) {
+    console.warn('Failed to load form data from localStorage:', error);
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+};
+
+const clearLocalStorage = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(STORAGE_KEY);
+};
+
+// Debounce utility
+const useDebounce = (callback: Function, delay: number) => {
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const debouncedCallback = useCallback((...args: any[]) => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    
+    const newTimer = setTimeout(() => {
+      callback(...args);
+    }, delay);
+    
+    setDebounceTimer(newTimer);
+  }, [callback, delay, debounceTimer]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [debounceTimer]);
+
+  return debouncedCallback;
+};
 
 const ContactForm: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
@@ -23,6 +111,31 @@ const ContactForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isDataRestored, setIsDataRestored] = useState(false);
+
+  // Debounced save function
+  const debouncedSave = useDebounce((data: FormData) => {
+    saveToLocalStorage(data);
+  }, 1000);
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedData = loadFromLocalStorage();
+    if (savedData) {
+      setFormData(prevData => ({
+        ...prevData,
+        ...savedData
+      }));
+      setIsDataRestored(true);
+    }
+  }, []);
+
+  // Save form data to localStorage when it changes
+  useEffect(() => {
+    if (isDataRestored || Object.values(formData).some(value => value !== '' && value !== false)) {
+      debouncedSave(formData);
+    }
+  }, [formData, debouncedSave, isDataRestored]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -30,6 +143,19 @@ const ContactForm: React.FC = () => {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+  };
+
+  const handleClearSavedData = () => {
+    clearLocalStorage();
+    setFormData({
+      nome: '',
+      email: '',
+      assunto: '',
+      organizacao: '',
+      mensagem: '',
+      newsletter: false
+    });
+    setIsDataRestored(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,14 +183,19 @@ const ContactForm: React.FC = () => {
 
       if (response.ok) {
         setSubmitStatus('success');
-        setFormData({
-          nome: '',
-          email: '',
-          assunto: '',
-          organizacao: '',
-          mensagem: '',
-          newsletter: false
-        });
+        
+        // Smart data clearing: preserve user profile info but clear sensitive data
+        const preservedData = {
+          nome: formData.nome,
+          email: formData.email,
+          organizacao: formData.organizacao,
+          newsletter: formData.newsletter,
+          assunto: '', // Clear previous subject
+          mensagem: '' // Clear message content
+        };
+        
+        setFormData(preservedData);
+        saveToLocalStorage(preservedData);
       } else {
         setSubmitStatus('error');
         setErrorMessage(result.error || 'Erro ao enviar mensagem');
@@ -79,7 +210,21 @@ const ContactForm: React.FC = () => {
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-8">
-      <h3 className="text-2xl font-bold text-gray-900 mb-6">Envie uma mensagem</h3>
+      <div className="flex justify-between items-start mb-6">
+        <h3 className="text-2xl font-bold text-gray-900">Envie uma mensagem</h3>
+        {isDataRestored && (
+          <button
+            onClick={handleClearSavedData}
+            className="text-sm text-gray-500 hover:text-red-600 transition-colors duration-200 flex items-center space-x-1"
+            title="Limpar dados salvos"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            <span>Limpar dados</span>
+          </button>
+        )}
+      </div>
       
       {submitStatus === 'success' && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
@@ -198,21 +343,6 @@ const ContactForm: React.FC = () => {
           />
         </div>
         
-        <div className="flex items-start space-x-3">
-          <input
-            type="checkbox"
-            id="newsletter"
-            name="newsletter"
-            checked={formData.newsletter}
-            onChange={handleInputChange}
-            disabled={isSubmitting}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 disabled:cursor-not-allowed"
-          />
-          <label htmlFor="newsletter" className="text-sm text-gray-600">
-            Gostaria de receber atualizações sobre novos artigos e projetos jornalísticos
-          </label>
-        </div>
-        
         <div className="pt-4">
           <button
             type="submit"
@@ -238,9 +368,11 @@ const ContactForm: React.FC = () => {
           </button>
         </div>
         
-        <p className="text-xs text-gray-500 text-center">
-          * Campos obrigatórios. Sua mensagem será respondida em até 48 horas.
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-xs text-gray-500">
+            * Campos obrigatórios. Sua mensagem será respondida em até 48 horas.
+          </p>
+        </div>
       </form>
     </div>
   );

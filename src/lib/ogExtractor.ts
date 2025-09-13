@@ -23,7 +23,7 @@ export async function extractMetadataWithCheerio(url: string): Promise<OpenGraph
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
       },
-      signal: AbortSignal.timeout(8000), // 8 second timeout
+      signal: AbortSignal.timeout(3000), // 3 second timeout
       redirect: 'follow',
     });
 

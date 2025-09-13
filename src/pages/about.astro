@@ -1,22 +1,21 @@
 ---
 import { Image } from 'astro:assets';
 import { contentfulClient, type AboutEntry } from '../lib/contentful';
-import { documentToHtmlString } from '@contentful/rich-text-html-renderer';
+import {RichTextRenderer} from '@/components/RichTextRenderer';
 import Layot from '@/layouts/Layot.astro';
 
 const { items } = await contentfulClient.getEntries<AboutEntry>({ content_type: 'about', limit: 1 });
 const about = items[0];
 const title = about?.fields.title ?? 'Sobre';
-const descriptionHtml = about?.fields.description ? documentToHtmlString(about.fields.description as any) : '';
+const descriptionRichText = about?.fields.description;
 const banners = (about?.fields.banner || []) as any[];
 const bannerUrls = banners.map((asset) => (asset?.fields?.file?.url ? `https:${asset.fields.file.url}` : ''));
 ---
 
 <Layot title={title} description={title}>
-	<div class="bg-gray-50 min-h-screen pt-20">
-		
+	<div class="min-h-screen pt-20">
 		<!-- Hero Section -->
-		<section class="bg-white py-16 sm:py-24">
+		<section class="bg-white">
 			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				{bannerUrls.length > 0 && (
 					<div class="flex flex-col lg:flex-row gap-8 mb-16 items-center lg:items-start justify-center">
@@ -37,9 +36,9 @@ const bannerUrls = banners.map((asset) => (asset?.fields?.file?.url ? `https:${a
 							<h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl mb-6 lg:mb-8 lg:text-left">
 								{title}
 							</h1>
-							<article class="prose prose-lg prose-blue max-w-none">
-								<div set:html={descriptionHtml} />
-							</article>
+	 						<article class="prose prose-lg prose-blue max-w-none">
+	 							<RichTextRenderer content={about.fields.description} size={100} />
+	 						</article>
 						</div>
 					</div>
 				)}

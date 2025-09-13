@@ -1,5 +1,4 @@
 ---
-import { Image } from 'astro:assets';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import { contentfulClient, type GalleryEntry } from '../lib/contentful';
 import { processContentfulImages } from '../lib/imageUtils';
@@ -21,7 +20,7 @@ const processedImages = processContentfulImages(allAssets);
 <Layot title={`${SITE_TITLE} — Gallery`} description={SITE_DESCRIPTION}>
   <div class=" min-h-screen pt-20">
     <!-- Hero Section -->
-    <section class="bg-white py-16">
+    <section class="bg-white">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl mb-6">
@@ -33,32 +32,39 @@ const processedImages = processContentfulImages(allAssets);
 
     <!-- Gallery Section -->
     <main class="mx-auto max-w-[1960px] p-4">
-      <!-- {photoId && (
-        <Modal
-          images={images}
-          onClose={() => {
-            setLastViewedPhoto(photoId)
-          }}
-        />
-      )} -->
       <div class="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4">
-        {processedImages.map(({ id, url, blurDataUrl }) => (
+        {processedImages.map((image) => (
           <a
-            key={id}
-            href={`/gallery/p/${(id)}`}
-            as={`/gallery/p/${(id)}`}
-            shallow
-            class="relative mb-5 block w-full cursor-zoom-in group after:content-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"
+            key={image.id}
+            href={`/gallery/p/${image.id}`}
+            class="relative mb-5 block w-full cursor-zoom-in group after:content-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            <Image
-              alt="Gallery photo"
-              class="transform rounded-lg brightness-90 transition group-hover:brightness-110"
+            <img
+              src={image.url}
+              alt={image.title || 'Imagem da galeria'}
+              class="transform rounded-lg brightness-90 transition group-hover:brightness-110 w-full h-auto object-cover"
               style={{ transform: 'translate3d(0, 0, 0)' }}
-              src={url}
-              width={720}
-              height={480}
-              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, (max-width: 1536px) 33vw, 25vw"
+              loading="lazy"
+              decoding="async"
             />
+            
+            <!-- Overlay with image info on hover -->
+            {(image.title || image.description) && (
+              <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-end">
+                <div class="p-4 text-white">
+                  {image.title && (
+                    <h3 class="font-semibold text-sm mb-1 line-clamp-2">
+                      {image.title}
+                    </h3>
+                  )}
+                  {image.description && (
+                    <p class="text-xs opacity-90 line-clamp-3">
+                      {image.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </a>
         ))}
       </div>
