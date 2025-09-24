@@ -8,14 +8,16 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '@/consts';
 interface Props {
 	title?: string;
 	description?: string;
+	keywords?: string;
 }
 
-const { title = SITE_TITLE, description = SITE_DESCRIPTION } = Astro.props;
+const { title = SITE_TITLE, description = SITE_DESCRIPTION, keywords } = Astro.props;
 ---
 <!doctype html>
 <html lang="pt-BR">
 	<head>
-		<BaseHead title={title} description={description} />
+		<BaseHead title={title} description={description} keywords={keywords} />
+		<slot name="head" />
 	</head>
 	<body>
 		<!-- <TranslucidNavbar client:load /> -->

@@ -1,5 +1,5 @@
 import React from 'react';
-import Marquee from './magicui/Marquee';
+import { Marquee } from './magicui/marquee';
 
 type ExperienceLogo = {
   src: string;

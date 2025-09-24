@@ -1,20 +1,6 @@
 ---
-// Import the global.css file here so that it is included on
-// all pages through the use of the <BaseHead /> component.
 import '../styles/global.css';
 import type { ImageMetadata } from 'astro';
-import FallbackImage from '../assets/blog-placeholder-1.jpg';
-
-// Check if we have a custom OG image in public folder
-const getOGImage = (image?: ImageMetadata | any) => {
-	if (image) {
-		// Handle both Astro ImageMetadata and direct URL strings
-		const imageUrl = typeof image === 'string' ? image : image.src || image.url;
-		if (imageUrl) return new URL(imageUrl, Astro.url);
-	}
-	// Use og.png from public folder if available, otherwise fallback
-	return new URL('/og.png', Astro.url);
-};
 import { SITE_TITLE } from '../consts';
 
 interface Props {
@@ -28,7 +14,7 @@ interface Props {
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
-const { title, description, image = FallbackImage, keywords, author = 'Maria Clara Prudêncio', type = 'website' } = Astro.props;
+const { title, description, image, keywords, author = 'Maria Clara Prudêncio', type = 'website' } = Astro.props;
 ---
 
 <!-- Global Metadata -->
@@ -89,6 +75,16 @@ const { title, description, image = FallbackImage, keywords, author = 'Maria Cla
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={'/og.png'} />
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8XQ987NBTS"></script>
+<script is:inline>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8XQ987NBTS');
+</script>
 
 <!-- Structured Data -->
 <script type="application/ld+json">

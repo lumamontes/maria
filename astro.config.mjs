@@ -13,6 +13,10 @@ export default defineConfig({
   site: 'https://mariaprudencio.netlify.app',
   integrations: [mdx(), sitemap(), react()],
   adapter: netlify(),
+  image: {
+    domains: ['images.ctfassets.net'],
+    formats: ['avif', 'webp'],
+  },
   vite: {
     plugins: [tailwindcss()],
   },

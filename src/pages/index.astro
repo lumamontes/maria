@@ -54,6 +54,7 @@ const experienceLogos = experiencesRes.items.map((exp) => {
 	description="Jornalista formada pela UNIFAP em Macapá, Amapá. Realiza trabalhos freelancer de cobertura jornalística da região Norte e Amazônia com foco em questões sociais, ambientais e culturais."
 	keywords="jornalista, freelancer, Macapá, Amapá, região norte, Amazônia, UNIFAP, jornalismo, notícias, Maria Clara Prudêncio, trabalhos freelancer, serviços jornalísticos"
 >
+	<link slot="head" rel="preload" as="image" href={heroImage.src} fetchpriority="high" />
 			<section class="relative min-h-screen flex items-center justify-center overflow-hidden">
 			<!-- Animated Background -->
 			<div class="absolute inset-0">
@@ -61,8 +62,12 @@ const experienceLogos = experiencesRes.items.map((exp) => {
 					src={heroImage}
 					alt="Hero background"
 					priority
-					width={1920}
-					height={1080}
+					loading="eager"
+					format="avif"
+					fallbackFormat="webp"
+					widths={[480, 768, 1024, 1200, 1440, 1920]}
+					sizes="100vw"
+					quality={85}
 					class="w-full h-full object-cover scale-110 animate-slow-zoom"
 				/>
 				<!-- Gradient Overlays -->
