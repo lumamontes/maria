@@ -1,62 +1,99 @@
-# Astro Starter Kit: Blog
+# Maria Clara Prudêncio
+
+![Maria Clara Prudêncio homepage](assets/home.png)
+
+Personal portfolio and publishing site for **Maria Clara Prudêncio**, a journalist based in Macapá, Amapá. The site presents her work in journalism, freelance coverage, publications, photography, and contact channels, with content managed through Contentful.
+
+Live site: [mariaclaraprudencio.netlify.app](https://mariaclaraprudencio.netlify.app/)
+
+## Features
+
+- Responsive portfolio homepage with hero presentation and featured work
+- Blog powered by Contentful entries and rich text
+- Publications index with category filters
+- Contentful-backed photo gallery with detail pages
+- Contact form submitted through a server endpoint and Resend
+- RSS feed, sitemap, Open Graph metadata, and optimized image formats
+- React islands for interactive UI such as the contact form, galleries, and marquees
+
+## Tech Stack
+
+- Astro 5 with the React integration
+- TypeScript
+- Tailwind CSS 4 through the Vite plugin
+- Contentful for blog, publication, gallery, experience, and about content
+- Netlify adapter for deployment
+- MDX, RSS, sitemap, Sharp, and Resend integrations
+
+## Requirements
+
+- Node.js with Corepack enabled
+- pnpm
+- Contentful credentials for pages that query CMS content
+- Resend API key for the contact form endpoint
+
+## Getting Started
 
 ```sh
-pnpm create astro@latest -- --template blog
+pnpm install
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Create a local `.env` file with the credentials used by the application:
 
-Features:
+```env
+CONTENTFUL_SPACE_ID=your_space_id
+CONTENTFUL_PREVIEW_TOKEN=your_preview_token
+CONTENTFUL_DELIVERY_TOKEN=your_delivery_token
+RESEND_API_KEY=your_resend_api_key
+```
 
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and OpenGraph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
+Start the development server:
 
-## 🚀 Project Structure
+```sh
+pnpm dev
+```
 
-Inside of your Astro project, you'll see the following folders and files:
+The site is available at `http://localhost:4321`.
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `pnpm dev` | Start the local Astro development server |
+| `pnpm build` | Build the production site into `dist/` |
+| `pnpm preview` | Preview the production build locally |
+| `pnpm astro ...` | Run an Astro CLI command |
+
+## Routes
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Portfolio homepage |
+| `/about` | About page populated from Contentful |
+| `/blog` | Blog index |
+| `/blog/[slug]` | Individual blog post |
+| `/publications` | Filterable publication list |
+| `/gallery` | Photo gallery |
+| `/gallery/p/[slug]` | Gallery image detail page |
+| `/contato` | Contact form |
+| `/rss.xml` | RSS feed |
+
+## Project Structure
 
 ```text
-├── public/
-├── src/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+src/
+├── components/   Astro and React UI components
+├── layouts/      Shared page and blog layouts
+├── lib/          Contentful, image, link preview, and email helpers
+├── pages/        File-based routes and API endpoints
+├── assets/       Processed local assets
+└── consts.ts     Site title, description, and social links
+public/           Static fonts, metadata assets, and robots.txt
+astro.config.mjs  Astro, Netlify, sitemap, React, and Tailwind configuration
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+Contentful is queried at build time for the main content pages. In development, the preview API is selected; production builds use the delivery API.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## License
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-
-## Credit
-
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+No license file is currently included in this repository.
